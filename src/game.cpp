@@ -4,13 +4,13 @@
 
     // Standard
 #ifdef _WIN32
-    #define _CRT_SECURE_NO_WARNINGS // WIN32:MSVC disable warning C4996: This function or variable may be unsafe. 
+    #define _CRT_SECURE_NO_WARNINGS // WIN32:MSVC disable warning C4996: This function or variable may be unsafe.
 #endif
 
     #include <string.h>
     #include <stdint.h>
 
-    #include <sys/types.h> // 
+    #include <sys/types.h> //
     #include <sys/stat.h>  // stat
 
 #ifdef _WIN32
