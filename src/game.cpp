@@ -315,8 +315,8 @@ bool Game_Startup()
 
     // SDL_SetWindowDisplayMode( gpGameWindow, NULL ); // NULL = Window Dimensions & Desktop format & refresh
 
-    iError = SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &glMajorActual); if (iError < 0) { TRACE( "OpenGL: WARNING: Unable to get OpenGL Major Version\n" ); }
-    iError = SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &glMinorActual); if (iError < 0) { TRACE( "OpenGL: WARNING: Unable to get OpenGL Minor Version\n" ); }
+    iError = SDL_GL_GetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, &glMajorActual); if (iError < 0) { TRACE( "OpenGL: WARNING: Unable to get OpenGL Major Version\n" ); }
+    iError = SDL_GL_GetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, &glMinorActual); if (iError < 0) { TRACE( "OpenGL: WARNING: Unable to get OpenGL Minor Version\n" ); }
 
     {
         TRACE( "OpenGL: INFO: Default version: %d.%d\n", glMajorActual, glMinorActual );
