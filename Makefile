@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := all
+
 SOURCE_FILE = src/game.cpp
 
 TARGET_DEBUGER = bin/gamed.x
