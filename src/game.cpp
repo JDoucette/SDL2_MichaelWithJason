@@ -85,6 +85,12 @@
     GLint         gnGameMaxTextureDim = 0;
     GLint         gnTexturePacking    = 0;
 
+    #include "opengl_render.cpp"
+
+
+// ________________________________________________________________________
+
+
 // ======================================================================== 
 void Game_Input()
 {
@@ -112,7 +118,7 @@ void Game_Render()
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     gnRenderStart = SDL_GetTicks();
-
+        OpenGL_Render();
         SDL_GL_SwapWindow( gpGameWindow );
     gnRenderEnd   = SDL_GetTicks();
 
@@ -131,7 +137,7 @@ void Game_Render()
 // ======================================================================== 
 void Game_Shutdown()
 {
-//  ShaderShutdown();
+    OpenGL_Shutdown();
 
     SDL_DestroyWindow( gpGameWindow );
     SDL_Quit();
@@ -366,6 +372,8 @@ bool Game_Startup()
     TRACE( "OPENGL: INFO: Texture Packing (default): %d\n", gnTexturePacking );
     // TODO: Set Texture Packing to be 4
 
+    OpenGL_Startup();
+
     return true;
 }
 
@@ -385,7 +393,7 @@ bool Game_Run()
 
         Game_Input();
         // Game_Update( gnFrameDelta * 1.f / 1000.f ); // seconds
-        // Game_Render();
+        Game_Render();
     }
 
     return gbGameIsRunning;
