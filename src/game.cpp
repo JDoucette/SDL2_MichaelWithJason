@@ -41,7 +41,9 @@
 
 // Custom
     #include "debug_trace.h"
-    #include "math_util.h" // MATH_PI
+    #include "math_util.h"     // MATH_PI
+    #include "math_vector2i.h"
+    #include "math_vector2f.h"
 
 // = Globals =
 
@@ -70,6 +72,12 @@
 // Game Frame
     float         ganFrameClearColor[4]   = { 1.0f, 0.0f, 1.0f, 1.f }; // hot pink
 
+    // 1000 frames to calculate the average framerate
+    Uint32        gnFramesAvgStart        = 0;
+    Uint32        gnFramesAvgEnd          = 0;
+    Uint32        gnFramesAvgDelta        = 0;
+    float         gnFramesAvgPerSecond    = 0.f;
+
     size_t        gnFrame                 = 0;
     Uint32        gnFrameStart            = 0;
     Uint32        gnFrameEnd              = 0;
@@ -82,41 +90,54 @@
     int           gnFrameTimeMilliseconds = 0; // time in ms to render this frame
     int           gnFramesPerSecond       = 0; // instantenous
 
+// Game Matrix
+    Vector2f      gvCameraLocation = { 0.f, 0.f };
+
 // Game Assets
-    char         GAME_PATH_DATA[4096] = ""; // Always ends in /
+    char          GAME_PATH_DATA[4096] = ""; // Always ends in /
 
 // OpenGL
-    GLint         gnGameMaxTextureDim = 0;
-    GLint         gnTexturePacking    = 0;
-
     #include "opengl_funcs.h"
     #include "opengl_matrix.h"
     #include "opengl_matrixstack.h"
+    #include "opengl_mouse.h"
+    #include "opengl_render.h"
     #include "opengl_shader.h"
-
-    #include "opengl_matrix.cpp"
-    #include "opengl_matrixstack.cpp"
-    #include "opengl_buffers.cpp"
-
-    #include "opengl_render.cpp"
-    #include "opengl_shader.cpp"
+    #include "opengl_texture.h"
 
 // Util
+    #include "util_color.h"
     #include "util_fatal.h"
     #include "util_file.h"
     #include "util_imageinfo.h"
     #include "util_itoa.h"      // itoa_comma()
     #include "util_memory.h"    // swizzle32()
     #include "util_mempool.h"   // _1M
+    #include "util_png.h"
 
+// Implementation
+    #include "sprite2d.h"
+
+    #include "opengl_matrix.cpp"
+    #include "opengl_matrixstack.cpp"
+    #include "opengl_buffers.cpp"
+    #include "opengl_mouse.cpp"
+    #include "opengl_render.cpp"
+    #include "opengl_shader.cpp"
+    #include "opengl_texture.cpp"
+    #include "util_tga.cpp"
     #include "util_fatal.cpp"
     #include "util_png.cpp"
 
+
 // ________________________________________________________________________
 
+    void Game_InputMouse_Move( const SDL_Event & event );
+    void Game_InputMouse_Startup();
+    void Game_Update( const float deltaTime );
 
 // ========================================================================
-void Game_DataLoad()
+void Game_Data_Startup()
 {
 
 }
@@ -126,11 +147,24 @@ void Game_Input()
 {
     SDL_Event event;
 
+    gnMouseXprev = gnMouseXnext;
+    gnMouseYprev = gnMouseYnext;
+
     while( SDL_PollEvent( &event ) != 0 ) // implicit SDL_PumpEvents()
     {
         if( event.type == SDL_QUIT )
             gbGameIsRunning = false;
 
+        if( event.type == SDL_MOUSEMOTION )
+            Game_InputMouse_Move( event );
+/*
+        else
+        if( event.type == SDL_MOUSEBUTTONUP )
+            Game_InputMouseButtonUp( event );
+        else
+        if( event.type == SDL_MOUSEBUTTONDOWN )
+            Game_InputMouseButtonDown( event );
+*/
         if( event.type == SDL_KEYDOWN )
         {
             int key = event.key.keysym.sym;
@@ -142,8 +176,24 @@ void Game_Input()
 }
 
 // ========================================================================
+void Game_InputMouse_Move( const SDL_Event & event )
+{
+    gnMouseXnext += event.motion.xrel;
+    gnMouseYnext += event.motion.yrel;
+
+    // Current mouse position for tool-tips
+    if( gnMouseXnext < 0           ) gnMouseXnext = 0;
+    if( gnMouseXnext > gnGameWidth ) gnMouseXnext = gnGameWidth - 1;
+    if( gnMouseYnext < 0           ) gnMouseYnext = 0;
+    if( gnMouseYnext > gnGameHeight) gnMouseYnext = gnGameHeight - 1;
+}
+
+// ========================================================================
 void Game_Options( const int nArg, const char ** aArg )
 {
+    (void) nArg;
+    (void) aArg;
+
     // Find path to 'data'
     memset( GAME_PATH_DATA, 0, sizeof( GAME_PATH_DATA ) );
 
@@ -417,20 +467,46 @@ bool Game_Startup( int nArg, char *aArg[] )
         TRACE( "OPENGL: INFO: Detected OpenGL version: %d.%d\n", glMajorRequested, glMinorRequested );
     }
 
-    gnGameMaxTextureDim = 0;
-    glGetIntegerv( GL_MAX_TEXTURE_SIZE, &gnGameMaxTextureDim );
-
-    // http://stackoverflow.com/questions/9848901/opengl-use-single-channel-texture-as-alpha-channel-to-display-text
-    gnTexturePacking = 0;
-    glGetIntegerv( GL_UNPACK_ALIGNMENT, &gnTexturePacking );
-    TRACE( "OPENGL: INFO: Texture Packing (default): %d\n", gnTexturePacking );
-    // TODO: Set Texture Packing to be 4
-
     OpenGL_Startup();
+    Game_InputMouse_Startup();
+//  Game_Keyboard_Startup();
 
-    Game_DataLoad();
+    gnFrameStart     = SDL_GetTicks();
+    gnFramesAvgStart = gnFrameStart;
 
     return true;
+}
+
+
+// ========================================================================
+void Game_InputMouse_Startup()
+{
+    // In window/full-screen mode SDL will report a bogus mouse moved on the first frame
+    gnMouseXnext = gnMouseXprev = gnGameWidth /2;
+    gnMouseYnext = gnMouseYprev = gnGameHeight/2;
+    SDL_WarpMouseInWindow( gpGameWindow, gnMouseXnext, gnMouseYnext ); // BUGFIX: mouse delta first frame
+
+    SDL_Event event;
+    while( SDL_PollEvent( &event ) != 0 )
+    {
+        if( event.type == SDL_MOUSEMOTION )
+        {
+            TRACE( "MOUSE: DEBUG: eat mouse event\n" );
+        }
+    }
+
+    TRACE( "MOUSE: DEBUG: done pre-render mouse move events\n" );
+
+    if( gbGameIsFullscreen )
+    {
+        // SDL 1.x
+        //SDL_ShowCursor( 0 );
+        //SDL_WM_GrabIntput( SDL_GRAB_ONsa );
+    }
+
+        // SDL 2.x
+        // Allow the mouse motion event to be received even if the mouse cursor is outside the window
+        SDL_SetRelativeMouseMode( SDL_TRUE );
 }
 
 // ========================================================================
@@ -448,11 +524,20 @@ bool Game_Run()
             gnFrameDelta = 120 ; // don't run slower then   8 fps (1000ms/s /120ms/frame) (i.e. when Real-Time Debugging)
 
         Game_Input();
-        // Game_Update( gnFrameDelta * 1.f / 1000.f ); // seconds
+        Game_Update( gnFrameDelta * 1.f / 1000.f ); // seconds
         Game_Render();
     }
 
     return gbGameIsRunning;
+}
+
+// ========================================================================
+void Game_Update( const float deltaTime )
+{
+    if( gbGameIsPaused )
+        return;
+
+    OpenGL_Update( deltaTime );
 }
 
 // ========================================================================
