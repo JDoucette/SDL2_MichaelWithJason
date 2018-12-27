@@ -183,7 +183,7 @@ void Game_InputMouse_Move( const SDL_Event & event )
 
     // Current mouse position for tool-tips
     if( gnMouseXnext < 0           ) gnMouseXnext = 0;
-    if( gnMouseXnext > gnGameWidth ) gnMouseXnext = gnGameWidth - 1;
+    if( gnMouseXnext > gnGameWidth ) gnMouseXnext = gnGameWidth  - 1;
     if( gnMouseYnext < 0           ) gnMouseYnext = 0;
     if( gnMouseYnext > gnGameHeight) gnMouseYnext = gnGameHeight - 1;
 }
