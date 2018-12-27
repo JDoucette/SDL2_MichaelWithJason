@@ -575,7 +575,7 @@ class Sprite2D
                     File_Read( pFileMeta, pMeta, nSizeMeta );
                     parseMeta( pMeta, nSizeMeta );
 
-                    MemPoolMgr_Unlock( eMeta, hMeta );
+                    MemPoolMgr_Unlock( eMeta );
                     File_Close( pFileMeta );
                 }
             }
