@@ -147,13 +147,6 @@ bool Game_Startup()
 
     // Compiler warns about not being set
     aDisplay[0].w = 0;
-    bool          gbGameIsFullscreen   = false;
-    bool          gbGameIsWindowed     = true;
-    int           gnGameVSync          = 1; // ON by default; use command line: -vsync or +vsync or =vsync
-    bool          gbGameIsRunning      = true;
-    bool          gbGameIsPaused       = false;
-    bool          gbGameSingleStep     = false;
-
     aDisplay[0].h = 0;
 
     iError = SDL_Init( SDL_INIT_VIDEO );
