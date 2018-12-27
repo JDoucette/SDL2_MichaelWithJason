@@ -38,9 +38,12 @@ void OpenGL_Startup()
     glCullFace( GL_BACK ); // default: BACK
     glFrontFace( GL_CCW ); // default:  CCW
     glEnable( GL_CULL_FACE );
+
+    Shader_Startup( true );
 }
 
 void OpenGL_Shutdown()
 {
+    Shader_Shutdown();
 }
 

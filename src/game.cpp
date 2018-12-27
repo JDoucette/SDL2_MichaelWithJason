@@ -41,6 +41,7 @@
 
 // Custom
     #include "debug_trace.h"
+    #include "math_util.h" // MATH_PI
 
 // = Globals =
 
@@ -81,17 +82,46 @@
     int           gnFrameTimeMilliseconds = 0; // time in ms to render this frame
     int           gnFramesPerSecond       = 0; // instantenous
 
+// Game Assets
+    char         GAME_PATH_DATA[4096] = ""; // Always ends in /
+
 // OpenGL
     GLint         gnGameMaxTextureDim = 0;
     GLint         gnTexturePacking    = 0;
 
-    #include "opengl_render.cpp"
+    #include "opengl_funcs.h"
+    #include "opengl_matrix.h"
+    #include "opengl_matrixstack.h"
+    #include "opengl_shader.h"
 
+    #include "opengl_matrix.cpp"
+    #include "opengl_matrixstack.cpp"
+    #include "opengl_buffers.cpp"
+
+    #include "opengl_render.cpp"
+    #include "opengl_shader.cpp"
+
+// Util
+    #include "util_fatal.h"
+    #include "util_file.h"
+    #include "util_imageinfo.h"
+    #include "util_itoa.h"      // itoa_comma()
+    #include "util_memory.h"    // swizzle32()
+    #include "util_mempool.h"   // _1M
+
+    #include "util_fatal.cpp"
+    #include "util_png.cpp"
 
 // ________________________________________________________________________
 
 
-// ======================================================================== 
+// ========================================================================
+void Game_DataLoad()
+{
+
+}
+
+// ========================================================================
 void Game_Input()
 {
     SDL_Event event;
@@ -109,6 +139,25 @@ void Game_Input()
                 gbGameIsRunning = false;
         }
     }
+}
+
+// ========================================================================
+void Game_Options( const int nArg, const char ** aArg )
+{
+    // Find path to 'data'
+    memset( GAME_PATH_DATA, 0, sizeof( GAME_PATH_DATA ) );
+
+    bool isDirectory;
+    if( File_Exists( "data", &isDirectory ) )
+        strcpy( GAME_PATH_DATA, "data" );
+    else
+    if( File_Exists( "../data", &isDirectory ) )
+        strcpy( GAME_PATH_DATA, "../data" );
+    else
+    if( File_Exists( "../../data", &isDirectory ) )
+        strcpy( GAME_PATH_DATA, "../../data" );
+
+    strcat( GAME_PATH_DATA, "/" );
 }
 
 // ========================================================================
@@ -134,18 +183,23 @@ void Game_Render()
     gnFrame++;
 }
 
-// ======================================================================== 
+// ========================================================================
 void Game_Shutdown()
 {
+    MemPoolMgr_Shutdown();
     OpenGL_Shutdown();
 
     SDL_DestroyWindow( gpGameWindow );
     SDL_Quit();
 }
 
-// ======================================================================== 
-bool Game_Startup()
+// ========================================================================
+bool Game_Startup( int nArg, char *aArg[] )
 {
+    MemPoolMgr_Startup();
+
+    Game_Options( nArg, (const char**)aArg );
+
     SDL_DisplayMode aDisplay[ 16 ];
     SDL_DisplayMode tDisplay;
     int             iError;
@@ -374,6 +428,8 @@ bool Game_Startup()
 
     OpenGL_Startup();
 
+    Game_DataLoad();
+
     return true;
 }
 
@@ -399,10 +455,10 @@ bool Game_Run()
     return gbGameIsRunning;
 }
 
-// ======================================================================== 
+// ========================================================================
 int main(  int nArg, char* aArg[] )
 {
-    Game_Startup();
+    Game_Startup( nArg, aArg );
 
     while( Game_Run() )
         ;
