@@ -484,6 +484,14 @@ void Game_InputMouse_Startup()
     // In window/full-screen mode SDL will report a bogus mouse moved on the first frame
     gnMouseXnext = gnMouseXprev = gnGameWidth /2;
     gnMouseYnext = gnMouseYprev = gnGameHeight/2;
+
+    // SDL 2.x
+    // Allow the mouse motion event to be received even if the mouse cursor is outside the window
+    // BUGFIX: This needs to come before we poll the mouse events and warp the mouse position
+    // otherwise we need to ALT-TAB to the game window before we start to receive mouse events
+    // This also means that the mouse cursor is constrained to the window now.
+    SDL_SetRelativeMouseMode( SDL_TRUE );
+
     SDL_WarpMouseInWindow( gpGameWindow, gnMouseXnext, gnMouseYnext ); // BUGFIX: mouse delta first frame
 
     SDL_Event event;
@@ -503,10 +511,6 @@ void Game_InputMouse_Startup()
         //SDL_ShowCursor( 0 );
         //SDL_WM_GrabIntput( SDL_GRAB_ONsa );
     }
-
-        // SDL 2.x
-        // Allow the mouse motion event to be received even if the mouse cursor is outside the window
-        SDL_SetRelativeMouseMode( SDL_TRUE );
 }
 
 // ========================================================================
