@@ -37,7 +37,7 @@ else
         CC_FLAGS += -DOS_LINUX
         SDL_INC   = -I/usr/local/include/SDL2
         SDL_LIB   = -Wl,-rpath,/usr/local/lib -L/usr/local/lib -lSDL2 -lpthread -lm -lGL
-        CC_LIBS   = -L/usr/local/lib
+        CC_LIBS   = -L/usr/local/lib $(SDL_LIB)
         CC        = g++
         GDB       = gdb
     endif
@@ -64,17 +64,17 @@ GAME_SRC = $(wildcard src/*.cpp)
 $(TARGET_DEBUGER): $(GAME_INC) $(GAME_SRC)
 	@echo "\n\n=== DEBUG ==="
 	mkdir -p bin
-	$(CC) $(DEBUGER_FLAGS) $(CC_INCS) $(SOURCE_FILE) -o $@ $(CC_LIBS) $(SDL_LIB)
+	$(CC) $(DEBUGER_FLAGS) $(CC_INCS) $(SOURCE_FILE) -o $@ $(CC_LIBS)
 
 # Profile build
 $(TARGET_PROFILE): $(GAME_INC) $(GAME_SRC)
 	@echo "\n\n=== PROFILE ==="
 	mkdir -p bin
-	$(CC) $(PROFILE_FLAGS) $(CC_INCS) $(SOURCE_FILE) -o $@ $(CC_LIBS) $(SDL_LIB)
+	$(CC) $(PROFILE_FLAGS) $(CC_INCS) $(SOURCE_FILE) -o $@ $(CC_LIBS)
 
 # Release build
 $(TARGET_RELEASE): $(GAME_INC) $(GAME_SRC)
 	@echo "\n\n=== RELEASE ==="
 	mkdir -p bin
-	$(CC) $(RELEASE_FLAGS) $(CC_INCS) $(SOURCE_FILE) -o $@ $(CC_LIBS) $(SDL_LIB)
+	$(CC) $(RELEASE_FLAGS) $(CC_INCS) $(SOURCE_FILE) -o $@ $(CC_LIBS)
 
