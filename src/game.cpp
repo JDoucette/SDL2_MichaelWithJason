@@ -67,7 +67,7 @@
     bool          gbGameSingleStep     = false;
 
 // Game Frame
-    float         ganFrameClearColor[4]   = { 0.5f, 0.0f, 0.5f, 1.f }; // hot pink
+    float         ganFrameClearColor[4]   = { 1.0f, 0.0f, 1.0f, 1.f }; // hot pink
 
     size_t        gnFrame                 = 0;
     Uint32        gnFrameStart            = 0;
