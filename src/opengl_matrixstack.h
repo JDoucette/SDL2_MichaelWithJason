@@ -29,6 +29,10 @@
     extern int  gnMatrixProj;
     extern int  gnMatrixText;
 
+    // Render
+    float        gmMatrix3D[16]; // cached projection
+    float        gmMatrix2D[16]; // cached orthographic
+
 // = Prototypes =
 // :sort /.*\%18v/
 
