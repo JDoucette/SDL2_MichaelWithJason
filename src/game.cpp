@@ -110,7 +110,6 @@
     #include "util_fatal.h"
     #include "util_file.h"
     #include "util_imageinfo.h"
-    #include "util_itoa.h"      // itoa_comma()
     #include "util_memory.h"    // swizzle32()
     #include "util_mempool.h"   // _1M
     #include "util_png.h"

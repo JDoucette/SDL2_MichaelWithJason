@@ -1,20 +1,3 @@
-#if DEBUG
-    #define _DEBUG_MEM_POOL   0 // normally 1
-    #define _PROFILE_MEM_POOL 1 // normally 0
-#elif PROFILE
-    #define _DEBUG_MEM_POOL   0
-    #define _PROFILE_MEM_POOL 1
-#else // RELEASE
-    #define _DEBUG_MEM_POOL   0
-    #define _PROFILE_MEM_POOL 0
-#endif
-
-#define FAKE_MEM_POOL 0
-
-#if FAKE_MEM_POOL
-    bool gbFakeMemPoolDirty = false;
-#endif
-
     #undef  _SYSTEM_
     #define _SYSTEM_ "MEMPOOL"
 
@@ -23,13 +6,8 @@
 // Level 1 profile
 // Level 2 debug only
 // Level 3 profile + debug
-#if _DEBUG_MEM_POOL | _PROFILE_MEM_POOL
-    #define   TRACE_MEM_POOL(text) if(  _DEBUG_MEM_POOL) {TRACE("MemPool: ");TRACE(text);}
-    #define PROFILE_MEM_POOL(text) if(_PROFILE_MEM_POOL) {TRACE("MemPool: ");TRACE(text);}
-#else
     #define   TRACE_MEM_POOL(text)
     #define PROFILE_MEM_POOL(text)
-#endif
 
     const int      _1K = 1024;
     const size_t  _64K =   64 * _1K;
@@ -81,17 +59,9 @@
 
     struct MemPoolDebug_t
     {
-#if _PROFILE_MEM_POOL
-        /*       */ uint32_t nFrameAcquired; // need to do this per block
-        /*       */ uint32_t nFrameReleased;
-#endif
     };
 
 // Forward declare
-#if _DEBUG_MEM_POOL | _PROFILE_MEM_POOL
-    void  MemPool_GetName( MemPoolType_e ePool, char *name_ ); // deprecated
-    char* MemPool_GetIdNameSize( int iPool, size_t size );
-#endif // DEBUG PROFILE
 
     struct MemPool_t;
     MemPool_t *_gpMemPool = 0;
@@ -104,10 +74,6 @@
         uint32_t        nBlockSize; // 4 bytes per one block
         uint8_t       **pBlocks   ; // 8 array of pointers: -> MemBlock[0 .. nBlocks-1]
         uint8_t        *pData     ; // 8 raw total memory : contiguous array of MemPoolBlock[ nBlocks ]
-#if _DEBUG_MEM_POOL | _PROFILE_MEM_POOL | FAKE_MEM_POOL // +8
-        uint32_t        nFailed   ; //   Number of "failed" first-fit allocations
-        MemPoolDebug_t *pProfile  ; //==
-#endif                              //32
 
         uint32_t GetCapacity() const { return nBlocks; }
 
@@ -133,17 +99,10 @@ TRACE( "[%2d]: Block: %7u bytes * %u = Total: %s\n", type, nBlockSize, nBlocks, 
                 nBlocks = 0;
             }
 
-#if _DEBUG_MEM_POOL | _PROFILE_MEM_POOL |FAKE_MEM_POOL
-            /*  */   nFailed    = 0;
-#endif
-
             if( nBlocks )
             {
                      pBlocks    = (uint8_t**) malloc( sizeof(uint8_t*) * nBlocks );
                      pData      = (uint8_t*)  malloc( nTotalSize );
-#if _PROFILE_MEM_POOL
-                     pProfile   = (MemPoolDebug_t*) malloc( sizeof(MemPoolDebug_t) * nBlocks );
-#endif
             } else {
                      pBlocks    = NULL;
                      pData      = NULL;
@@ -156,8 +115,6 @@ TRACE( "[%2d]: Block: %7u bytes * %u = Total: %s\n", type, nBlockSize, nBlocks, 
 
         void Shutdown()
         {
-#if DEBUG
-#endif
             free( pData   );
             free( pBlocks );
         }
@@ -171,33 +128,6 @@ TRACE( "[%2d]: Block: %7u bytes * %u = Total: %s\n", type, nBlockSize, nBlocks, 
     // by providing the capacity in a separate initializer
     uint16_t gaMemPoolSizeInit[ NUM_MEM_POOLS ] =
     { // Capacity = Maximum number of entries for this pool #, where EntrySize = (1 << #)
-#if FAKE_MEM_POOL // Default zero in order to query/tune actual values
-            0 // 2^ 0
-        ,   0 // 2^ 1
-        ,   0 // 2^ 2
-        ,   0 // 2^ 3
-        ,   0 // 2^ 4
-        ,   0 // 2^ 5
-        ,   0 // 2^ 6 MEM_POOL_64
-        ,   0 // 2^ 7 MEM_POOL_128
-        ,   0 // 2^ 8 MEM_POOL_256
-        ,   0 // 2^ 9
-        ,   0 // 2^10 MEM_POOL_1K
-        ,   0 // 2^11
-        ,   0 // 2^12
-        ,   0 // 2^13
-        ,   0 // 2^14TRACE_MEM_POOL
-        ,   0 // 2^15
-        ,   0 // 2^16 MEM_POOL_64K
-        ,   0 // 2^17 MEM_POOL_128K
-        ,   0 // 2^18
-        ,   0 // 2^19
-        ,   0 // 2^20 MEM_POOL_1M
-        ,   0 // 2^21
-        ,   0 // 2^22
-        ,   0 // 2^23 MEM_POOL_8M
-#else
-  #if 1 // walls
             0 // 2^ 0 // invalid!
         ,   0 // 2^ 1
         ,   0 // 2^ 2
@@ -223,40 +153,9 @@ TRACE( "[%2d]: Block: %7u bytes * %u = Total: %s\n", type, nBlockSize, nBlocks, 
         ,   8 // 2^22 MEM_POOL_4M
         ,   2 // 2^23 MEM_POOL_8M
         ,   5 // 2^24 MEM_POOL_16M // World: wall, terrain, lights, liquids dynamic textures see: gLevel._solidSprite
-  #else // TODO: FIXME: CRASH: OSX // WIP: Optimized mem block partitions
-            0 // 2^ 0 // invalid!
-        ,   0 // 2^ 1
-        ,   0 // 2^ 2
-        ,   0 // 2^ 3
-        ,   0 // 2^ 4
-        ,2048 // 2^ 5 MEM_POOL_32
-        ,2048 // 2^ 6 MEM_POOL_64
-        ,   0 // 2^ 7 MEM_POOL_128
-        ,   0 // 2^ 8 MEM_POOL_256
-        ,  16 // 2^ 9             // 16384
-        , 512 // 2^10 MEM_POOL_1K // 8192
-        ,1024 // 2^11
-        ,2048 // 2^12 MEM_POOL_4K
-        , 512 // 2^13
-        , 256 // 2^14 MEM_POOL_16K
-        , 128 // 2^15
-        , 128 // 2^16 MEM_POOL_64K
-        , 128 // 2^17 MEM_POOL_128K
-        , 128 // 2^18 MEM_POOL_256K
-        , 512 // 2^19 MEM_POOL_512K
-        ,  32 // 2^20 MEM_POOL_1M // CRASH: Can't allocate 8 GB !!
-        ,   8 // 2^21 MEM_POOL_2M
-        ,   8 // 2^22 MEM_POOL_4M
-        ,   1 // 2^23 MEM_POOL_8M
-        ,   8 // 2^24 MEM_POOL_16M // World: wall, terrain, lights, liquids dynamic textures see: gLevel._solidSprite
-  #endif
-#endif
     };
 
 
-#if _DEBUG_MEM_POOL | _PROFILE_MEM_POOL | FAKE_MEM_POOL
-    char sMemPoolName[ 256 ];
-#endif
 
 
 // @return int Handle to MemBlock inside the Pool
@@ -275,12 +174,7 @@ MemPoolMgr_GetHandle( MemPoolType_e ePool )
     else
     {
         char text[ 256 ];
-#if _DEBUG_MEM_POOL || _PROFILE_MEM_POOL
-        MemPool_GetIdNameSize( ePool, 0 );
-        sprintf( text, "\nOUT OF MEMORY!\n\nNo more handles: %s", sMemPoolName );
-#else
         sprintf( text, "\nOUT OF MEMORY!\n\nNo more handles" );
-#endif
         Game_Fatal( _SYSTEM_, text );
     }
 
@@ -300,75 +194,6 @@ MemPoolMgr_GetBlockSize( MemPoolType_e ePool )
 }
 
 
-
-#if _DEBUG_MEM_POOL | _PROFILE_MEM_POOL | FAKE_MEM_POOL
-    /** Fill in the buffer with a short human readable pool size (K, or M)
-        If the pool is not valid will display an asterisk behind the size.
-    */
-    // ========================================================================
-    void
-    MemPool_GetName( MemPoolType_e ePool, char *name_ )
-    {
-        uint32_t nSize  = (uint32_t)MemPoolMgr_GetBlockSize(ePool);
-        bool     bValid = gaMemPool[ ePool ].nBlocks > 0;
-        uint32_t nDiv   = 1;
-        char     sUnit  = ' ';
-
-        if( nSize>= _1M )
-        {
-            nDiv  = _1M;
-            sUnit =  'M';
-        }
-        else
-        if( nSize>= _1K )
-        {
-            nDiv  = _1K;
-            sUnit =  'K';
-        }
-
-        sprintf( name_, "%3d%c%c (#%4d/%4d)"
-            , (nSize / nDiv), sUnit, bValid ? ' ' : '*'
-            , gaMemPool[ ePool ].iActive
-            , gaMemPool[ ePool ].nBlocks - 1
-        );
-    }
-
-
-    // ========================================================================
-    char*
-    MemPool_GetIdNameSize( int iPool, size_t size )
-    {
-        char    *name_  = sMemPoolName;
-        uint32_t nSize  = (uint32_t)MemPoolMgr_GetBlockSize( (MemPoolType_e) iPool );
-        bool     bValid = gaMemPool[ iPool ].nBlocks > 0;
-        uint32_t nDiv   = 1;
-        char     sUnit  = ' ';
-
-        if( nSize>= _1M )
-        {
-            nDiv  = _1M;
-            sUnit =  'M';
-        }
-        else
-        if( nSize>= _1K )
-        {
-            nDiv  = _1K;
-            sUnit =  'K';
-        }
-
-        sprintf( name_, "Pool: [%2d] %3d%c%c (#%3d/%4d) %s %s %s"
-            , iPool
-            , (nSize / nDiv), sUnit, bValid ? ' ' : '*'
-            , gaMemPool[ iPool ].iActive
-            , gaMemPool[ iPool ].nBlocks - 1
-            , itoa_comma( (uint32_t) size )
-            , size <= nSize ? "<=" : "**"
-            , itoa_comma( (uint32_t) nSize )
-        );
-
-        return name_;
-    }
-#endif // DEBUG PROFILE
 
 // Return the pool # that the blocksize would fit into, or 0 if none.
 // ========================================================================
@@ -395,18 +220,9 @@ MemPoolMgr_GetPool( const size_t size )
 
         uint32_t nBlocks = pPool->nBlocks;
 
-#if FAKE_MEM_POOL
-        nBlocks = -1; // always have "free blocks" in this partition
-        gbFakeMemPoolDirty = true;
-#endif
 
         if( pPool && nBlocks && (size <= pPool->nBlockSize) )
         {
-#if FAKE_MEM_POOL
-            pPool->iActive++;
-            if( pPool->nFailed < pPool->iActive )
-                pPool->nFailed = pPool->iActive ;
-#endif
             if( pPool->iActive < nBlocks )
                 return (MemPoolType_e)iPool; // NOTE: Pool may be full!
             else //  pPool->iActive >= pPool->nBlocks
@@ -490,21 +306,8 @@ MemPoolMgr_Query( size_t *used_, size_t *free_, size_t *total_ )
             nUsed  += (pPool->iActive * nSize);
             nTotal += (pPool->nBlocks * nSize);
         }
-#if FAKE_MEM_POOL
-        if( gbFakeMemPoolDirty ) // prevent spam
-        {
-            char text[256];
-            MemPool_GetIdNameSize( iPool, 0 );
-            sprintf( text, "    ,%4u // Allocations: %s", pPool->nFailed, sMemPoolName );
-            TRACE( "%s\n", text );
-        }
-#endif // FAKE_MEM_POOL
     }
     nFree = nTotal - nUsed;
-
-#if FAKE_MEM_POOL
-    gbFakeMemPoolDirty = false;
-#endif // FAKE_MEM_POOL
 
     if( used_ ) *used_  = nUsed;
     if( free_ ) *free_  = nFree;
@@ -516,19 +319,6 @@ MemPoolMgr_Query( size_t *used_, size_t *free_, size_t *total_ )
 void
 MemPoolMgr_QueryStats()
 {
-#if _DEBUG_MEM_POOL | _PROFILE_MEM_POOL
-#if 0
-    for( int iPool = 0; iPool < NUM_MEM_POOLS; iPool++ )
-    {
-        MemPool_t *pPool = &gaMemPool[ iPool ];
-        if( pPool )
-        {
-            MemPool_GetIdNameSize( iPool, 0 );
-            TRACE( "%s\n", sMemPoolName );
-        }
-    }
-#endif
-#endif
 }
 
 
@@ -560,19 +350,9 @@ MemPoolMgr_Startup()
 // Swap-with-Last
 // ========================================================================
 void
-MemPoolMgr_Unlock( MemPoolType_e ePool, int hBlock )
+MemPoolMgr_Unlock( MemPoolType_e ePool )
 {
     MemPool_t *pPool = &gaMemPool[ ePool ]     ;
-#if !FAKE_MEM_POOL
-    int        iDead = pPool->iActive - 1      ;  // Swap: [ hHandle ] <--> [ iActive-1 ]
-    uint8_t   *pTemp = pPool->pBlocks[ hBlock ];
-                       pPool->pBlocks[ hBlock ] = pPool->pBlocks[ iDead ];
-                                                  pPool->pBlocks[ iDead ] = pTemp;
-#if _PROFILE_MEM_POOL
-    pPool->pProfile[hBlock].nFrameReleased = (uint32_t)gnFrame;
-#endif
-#endif // FAKE_MEM_POOL
-
     pPool->iActive--;
 }
 
@@ -610,13 +390,8 @@ inline  uint8_t*    make( const size_t size )
 #if _DEBUG_MEM_POOL
                         TRACE("mempool.make( %s )  Pool: [%2d]  Block: $%d\n", itoa_comma( (uint32_t) size ), eMemPool, hMemBlock );
 #endif
-#if FAKE_MEM_POOL
-                        int hMemBlock = 0;
-                        pData = new uint8_t[ size ];
-#else
                         int            hMemBlock = MemPoolMgr_GetHandle ( eMemPool );
                         /*uint8_t* */  pData     = MemPoolMgr_LockHandle( eMemPool, hMemBlock );
-#endif // FAKE_MEM_POOL
                         nPoolBlock = 0
                             | (uint32_t)(eMemPool  & MEM_POOL_MASK ) << MEM_POOL_SHIFT
                             | (uint32_t)(hMemBlock & MEM_BLOCK_MASK) << MEM_BLOCK_SHIFT;
@@ -626,14 +401,9 @@ inline  uint8_t*    make( const size_t size )
 inline  void        free()
                     {
                         int eMemPool  = (nPoolBlock >> MEM_POOL_SHIFT ) & MEM_POOL_MASK ;
-                        int hMemBlock = (nPoolBlock >> MEM_BLOCK_SHIFT) & MEM_BLOCK_MASK;
-#if FAKE_MEM_POOL
-                        delete [] pData;
-#else
                         if( !eMemPool )
                             Game_Fatal( _SYSTEM_, "\nTrying to free memory not in the pool!" );
-#endif // FAKE_MEM_POOL
-                        MemPoolMgr_Unlock( (MemPoolType_e)eMemPool, hMemBlock );
+                        MemPoolMgr_Unlock( (MemPoolType_e)eMemPool );
                     }
     };
 
