@@ -34,6 +34,7 @@
     void   Shader_Shutdown();
     bool   Shader_Startup ( bool verbose = false );
     void   Shader_TexCoordPointer( GLuint buffer, const int size, const int type, const int stride, const int offset, const bool bNormalize = false );
+    void   Shader_Texture( GLuint hTexture, const int iTexture = 0 );
     void   Shader_VertexPointer  ( GLuint buffer, const int size, const int type, const int stride, const int offset );
 
     GLuint OpenglCreateBuffer();
