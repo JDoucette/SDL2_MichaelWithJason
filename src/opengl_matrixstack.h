@@ -25,7 +25,7 @@
     extern float gaMatrixText[ 4                     ][16];
 
     // Depth
-    extern int  gnMatrixView ;
+    extern int  gnMatrixView;
     extern int  gnMatrixProj;
     extern int  gnMatrixText;
 
