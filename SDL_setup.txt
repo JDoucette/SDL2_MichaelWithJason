@@ -1,0 +1,9 @@
+1
+	https://www.libsdl.org/download-2.0.php
+	download 
+		Mac OS X:
+		SDL2-2.0.9.dmg
+2
+	from ReadMe.txt
+	To Install:
+	Copy the SDL2.framework to /Library/Frameworks
