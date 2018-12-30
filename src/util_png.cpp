@@ -142,9 +142,6 @@ bool PNG_Load_MemAlloc( const char *filename, ImageInfo_t *info_, void **mem_ )
 
             if( pFile && nSize )
             {
-                bValid = (nSize < _1M);
-                if( !bValid ) { Game_Fatal( "PNG > 1M" ); goto bail; }
-
                 File_Read( pFile, buffer, nSize );
 
                 bValid = PNG_GetInfo( nSize, buffer, info_ );
