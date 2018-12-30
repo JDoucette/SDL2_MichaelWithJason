@@ -17,6 +17,9 @@ clean:
 	$(RM) $(TARGET_PROFILE)
 	$(RM) $(TARGET_RELEASE)
 
+run:
+	$(TARGET_DEBUGER)
+
 CC_FLAGS += -Wall -Wextra
 CC_INCS   = $(SDL_INC)
 
