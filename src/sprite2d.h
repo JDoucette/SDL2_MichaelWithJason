@@ -119,9 +119,6 @@ class Sprite2D
             , SPRITE_FLAG_IS_HIDDEN        = (1 << 5)
         };
 
-#if DEBUG // verify sprite wasn't over-written with out-of-bounds memory access
-        uint32_t          _DEAD_CODE;
-#endif
         uint16_t          _iFrame   ;
         uint16_t          _nFrame   ;
         SpriteRect        _aFrame[16];
@@ -157,17 +154,9 @@ class Sprite2D
         void initialize()
         {
             memset( this, 0, sizeof( *this ) );
-#if DEBUG
-            _DEAD_CODE = 0xDEADC0DE;
-#endif
             _scaleW      = 1.0f;
             _scaleH      = 1.0f;
             facingDir    = FACING_DIR4_E;
-#if DEBUG
-//            _pMemTexture = MemPoolBlockData_t( __FILE__, __LINE__ ); // TODO: FIXME: HACK: ! Use Mem_Alloc() -- need support for 16 & 32 byte mempool
-//            if( !_pMemTexture.pData ) // Array Out-of-Bounds or Out-of-Memory!
-//                Game_Fatal( "SPRITE2D", "Couldn't allocate memory!?" );
-#endif
         }
 
         // "[ws] # [ws] # [ws] # [ws] #"
@@ -361,9 +350,6 @@ class Sprite2D
             //
             // copy all of the member variables
             //
-#if DEBUG
-            _DEAD_CODE = pSprite->_DEAD_CODE;
-#endif
             _iFrame    = pSprite->_iFrame;
             _nFrame    = pSprite->_nFrame;
 
@@ -762,10 +748,6 @@ class Sprite2D
         void
         Unload()
         {
-#if DEBUG
-            if( _DEAD_CODE != 0xDEADC0DE )
-                Game_Fatal( "ERROR", "Sprite memory over-written!" );
-#endif
             // don't deallocate the child, which is just a reference, we deallocate the parent
             if (! IsClone())
                 Mem_Deloc( &_pMemTexture );
