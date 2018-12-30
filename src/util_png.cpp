@@ -58,42 +58,15 @@ bool PNG_GetInfo( const size_t size, const uint8_t *buffer, ImageInfo_t *info_ )
         uint8_t  interlace;
     };
 
-    struct PNG_CHUNK
-    {
-        uint32_t nSize;
-        uint32_t nType;
-
-        char     sType[8];
-
-        const uint8_t* Get( const uint8_t *buffer )
-        {
-            nSize = mem_u32be( buffer + 0 );
-            nType = mem_u32be( buffer + 4 );
-
-            sType[0] = buffer[4];
-            sType[1] = buffer[5];
-            sType[2] = buffer[6];
-            sType[3] = buffer[7];
-            sType[4] = 0;
-
-            return buffer + 8;
-        }
-    };
-
     PNG_IHDR  tInfo;
-    PNG_CHUNK chunk;
 
     while( pSrc < pEnd )
     {
-        const uint8_t *pData = chunk.Get( pSrc );
+        /* */ uint32_t nSize = mem_u32be( pSrc + 0 );
+        /* */ uint32_t nType = mem_u32be( pSrc + 4 );
+        const uint8_t *pData =            pSrc + 8;
 
-//char text[ 256 ];
-//sprintf( text, "Size: %08X   \n", chunk.nSize );
-//TRACE( text );
-//sprintf( text, "Type: %08X %s\n", chunk.nType, chunk.sType );
-//TRACE( text );
-
-        if( chunk.nType == 0x49484452 ) // IHDR
+        if( nType == 0x49484452 ) // IHDR
         {
             tInfo         = *(PNG_IHDR*)pData;
             tInfo.width   = swizzle32( tInfo.width  );
@@ -123,7 +96,7 @@ bool PNG_GetInfo( const size_t size, const uint8_t *buffer, ImageInfo_t *info_ )
         // 0x67414D41 gAMA
         // 0x504C5445 PLTE
         else
-        if( chunk.nType == 0x49444154 ) // IDAT
+        if( nType == 0x49444154 ) // IDAT
         {
             // Reference:
             // https://github.com/nothings/stb/blob/master/stb_image.h
@@ -138,7 +111,7 @@ bool PNG_GetInfo( const size_t size, const uint8_t *buffer, ImageInfo_t *info_ )
         // 0x49454E44 IEND
 
         pSrc += 8; // size, type
-        pSrc += chunk.nSize;
+        pSrc += nSize;
         pSrc += 4; // CRC32
     }
 
