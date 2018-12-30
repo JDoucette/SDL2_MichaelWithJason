@@ -119,69 +119,6 @@ bool PNG_GetInfo( const size_t size, const uint8_t *buffer, ImageInfo_t *info_ )
 }
 
 
-/** Will fill buffer (texels_) with pixel data
-    @returns bool TRUE if was able to read the PNG
-*/
-// ========================================================================
-bool PNG_Load( const char *filename, ImageInfo_t *info_, uint8_t *pixels_ = 0 )
-{
-    bool   bValid = false;
-    size_t nSize  = 0;
-
-    if (!filename)
-    {
-#if DEBUG
-        Game_Fatal( "PNG_Load() NULL filename!" );
-#endif
-        return bValid;
-    }
-
-    if( !pixels_ )
-    {
-#if DEBUG
-        Game_Fatal( "PNG_Load() NULL texels!" );
-#endif
-        return bValid;
-    }
-
-    FILE *pFile = File_OpenGetSize( filename, &nSize );
-    if( pFile && nSize )
-    {
-        // Use temp 1MB mem pool for reading
-        if( nSize > _1M )
-        {
-            Game_Fatal( "PNG > 1MB" );
-            File_Close( pFile );
-            return bValid;
-        }
-
-        int w;
-        int h;
-        int n; // bytes per pixel
-        uint8_t *p = Mem_Alloc( _1M );
-
-            // slurp entire file into temp memory buffer
-            File_Read( pFile, p, nSize );
-            PNG_GetInfo( nSize, p, info_ );
-
-            unsigned char *pTexels = stbi_load_from_memory( p, (int)nSize, &w, &h, &n, STBI_rgb_alpha );
-
-            info_->pTexels = pixels_;
-            info_->nBytes  = w * h * n;
-#if DEBUG
-    TRACE( "   PNG: w: %d  h:%d   FileSize: %u  TexSize: %u  tex: %p\n", w, h, (uint32_t)nSize, info_->nBytes, pTexels );
-#endif
-            memcpy( pixels_, pTexels, info_->nBytes ); // dst, src, len
-            stbi_image_free( pTexels );
-
-        Mem_Deloc();
-    }
-    File_Close( pFile );
-
-    return bValid;
-}
-
-
 /** Allocates a memory block and fills in image info
     @returns bool - TRUE if was able to read the PNG
     Uses 2 MemPools - returns the second one which has the texels
