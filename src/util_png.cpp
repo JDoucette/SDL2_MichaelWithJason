@@ -214,26 +214,22 @@ bool PNG_Load( const char *filename, ImageInfo_t *info_, uint8_t *pixels_ = 0 )
     Uses 2 MemPools - returns the second one which has the texels
 */
 // ========================================================================
-bool PNG_Load_MemAlloc( const char *filename, ImageInfo_t *info_, MemPoolBlockData_t *mem_ )
+bool PNG_Load_MemAlloc( const char *filename, ImageInfo_t *info_, void **mem_ )
 {
-    bool bValid = false;
+    bool   bValid = false;
     size_t nSize  = 0;
 
     if( !filename
     ||  !info_
     ||  !mem_
     )
-    {
-#if DEBUG
-        Game_Fatal( "PNG_Load() BAD filename, image info, memory!" );
-#endif
-        return bValid;
-    }
+        return false;
 
     // Don't need to call info_->clear() since PNG_GetInfo() will
 
-    uint8_t *buffer= Mem_Alloc( _1M );
-        FILE *pFile = File_OpenGetSize( filename, &nSize );
+    uint8_t *buffer = (uint8_t*) malloc( _1M );
+    FILE    *pFile  = File_OpenGetSize( filename, &nSize );
+
             if( pFile && nSize )
             {
                 bValid = (nSize < _1M);
@@ -244,7 +240,8 @@ bool PNG_Load_MemAlloc( const char *filename, ImageInfo_t *info_, MemPoolBlockDa
                 bValid = PNG_GetInfo( nSize, buffer, info_ );
                 if( !bValid ) { Game_Fatal( "PNG bad header!" ); goto bail; }
 
-                info_->pTexels = Mem_Alloc( info_->nBytes, mem_ );
+                *mem_ = (uint8_t*) malloc( info_->nBytes );
+                info_->pTexels = (uint8_t*) *mem_;
 
                 int w;
                 int h;
@@ -254,8 +251,8 @@ bool PNG_Load_MemAlloc( const char *filename, ImageInfo_t *info_, MemPoolBlockDa
                 stbi_image_free( pTexels );
             }
 bail:
-        File_Close( pFile );
-    Mem_Deloc();
+    File_Close( pFile );
+    free( buffer );
 
     return bValid;
 }

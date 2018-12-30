@@ -137,7 +137,7 @@ class Sprite2D
         float              _nAnimDuration  ;
 
         // Texels
-        MemPoolBlockData_t _pMemTexture; // NOTE: may be cloned data ... shared pointer!
+        void*             _pData;
 
         uint16_t          _tw       ; // texture atlas w
         uint16_t          _th       ; // texture atlas h
@@ -254,12 +254,22 @@ class Sprite2D
             _ootw = 1.f / (float)_tw;
             _ooth = 1.f / (float)_th;
 
+            // GL_TEXTURE_WRAP_S
+            // GL_TEXTURE_WRAP_T
+            // glTexImage2D
             _hTexture = OpenglCreateTexture(
                  _tw
                 ,_th
-                ,_pMemTexture.pData
+                ,_pData
                 ,format
             );
+
+//          GLuint hTexture;
+//          glGenTextures( 1, &hTexture );
+//          glBindTexture( GL_TEXTURE_2D, hTexture );
+//          glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S    , GL_REPEAT ); // CLAMP_TO_EDGE );
+//          glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T    , GL_REPEAT ); // CLAMP_TO_EDGE );
+
             glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
             glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
 
@@ -274,8 +284,7 @@ class Sprite2D
         {
             // Texels
             // reference the same pointer, BUT mark this as a clone so we don't try and free the parent sprite!
-            _pMemTexture.pData      = pSprite->_pMemTexture.pData;
-            _pMemTexture.nPoolBlock = pSprite->_pMemTexture.nPoolBlock;
+            _pData = pSprite->_pData;
 
             //
             // copy all of the member variables
@@ -338,7 +347,7 @@ class Sprite2D
         {
             // we don't free clones, we leave that to the parent, the clone is just a pointer to the parent's memory
             if(! IsClone() )
-                _pMemTexture.free();
+                free( _pData );
         }
 
         // ========================================================================
@@ -441,14 +450,7 @@ class Sprite2D
             if( filename )
             {
                 if( bPNG )
-                    bValid = PNG_Load_MemAlloc( path, &info, &_pMemTexture );
-/*
-                else
-                {
-                    _pMemTexture.make( nSizeTextureAtlas );
-                    bValid = TGA_Load( path, &info, _pMemTexture.pData, GL_RGBA );
-                }
-*/
+                    bValid = PNG_Load_MemAlloc( path, &info, &_pData );
             }
 
             if( bValid )
@@ -540,11 +542,10 @@ class Sprite2D
 
             if( pixels )
             {   // uncommon case
-                _pMemTexture.nPoolBlock = 0; // signal, we don't own
-                _pMemTexture.pData = pixels;
+                _pData = pixels;
             } else {
                 uint32_t nSizeTextureAtlas = width * height * (bpp / 8);
-                _pMemTexture.make( nSizeTextureAtlas );
+                _pData = malloc( nSizeTextureAtlas );
             }
         }
 
@@ -653,7 +654,7 @@ class Sprite2D
         {
             // don't deallocate the child, which is just a reference, we deallocate the parent
             if (! IsClone())
-                Mem_Deloc( &_pMemTexture );
+                free( _pData );
         }
 
         /**
@@ -756,6 +757,6 @@ class Sprite2D
         void
         UploadTexture( int format = GL_RGBA )
         {
-            OpenglUpdateTexture( _hTexture, _tw, _th, _pMemTexture.pData, format );
+            OpenglUpdateTexture( _hTexture, _tw, _th, _pData, format );
         }
 };
