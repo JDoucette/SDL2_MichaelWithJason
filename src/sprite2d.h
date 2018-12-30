@@ -159,65 +159,6 @@ class Sprite2D
             facingDir    = FACING_DIR4_E;
         }
 
-        // "[ws] # [ws] # [ws] # [ws] #"
-        //       x      y      w      h for frame: iFrame
-        void
-        parseMeta( const uint8_t* pMeta, size_t size )
-        {
-            const uint8_t *pSrc = pMeta;
-            const uint8_t *pEnd = pMeta +size;
-
-            int n      = 0;
-            int iFrame = 0;
-//            SpriteRect rect; // TODO: 2-pass, get # of frames, read SpriteRect
-
-            enum State
-            {
-                 SKIP_BOL
-                ,HAVE_X, SKIP_X_WS
-                ,HAVE_Y, SKIP_Y_WS
-                ,HAVE_W, SKIP_W_WS
-                ,HAVE_H, SKIP_H_WS
-                ,SKIP_EOL
-            };
-            State state = SKIP_BOL;
-
-            while( pSrc < pEnd )
-            {
-                switch( state )
-                {
-                    case SKIP_BOL:
-                        if( *pSrc == ' ') break;
-                        if( *pSrc == '#' || (pSrc[0] == '/' && pSrc[1] == '/')) state = SKIP_EOL;
-                        if( *pSrc >= '0' && *pSrc <= '9') state = HAVE_X;
-                        break;
-
-                    case HAVE_X:
-                        if( *pSrc >= '0' && *pSrc <= '9')
-                        {
-                            n *= 10;
-                            n += (*pSrc - '0');
-                        } else {
-//                            rect.x = (uint16_t) n;
-                            state = SKIP_X_WS;
-                        }
-                        break;
-
-                    case SKIP_EOL:
-                        while( pSrc < pEnd )
-                            if( *pSrc != 0x0A )
-                                 pSrc++;
-                        iFrame++;
-                        break;
-
-                    default:
-                        break;
-                }
-
-                pSrc++;
-            }
-        }
-
         Vector2f _vLocationScreenSpace; // used to be x,y
 
     public:
@@ -325,17 +266,6 @@ class Sprite2D
             _hvBuffer = OpenglCreateBuffer(); // xy
             _htBuffer = OpenglCreateBuffer(); // uv
             _hkBuffer = OpenglCreateBuffer(); // rgba
-        }
-
-        // ========================================================================
-        inline friend void
-        BitBlit( Sprite2D *srcSprite, const ImageRect_t & srcRect, Sprite2D *dstSprite, const ImageRect_t & dstRect )
-        {
-            BitBlit32(
-                16, 16,
-                srcSprite->_pMemTexture.pData, srcRect.x, srcRect.y, srcSprite->_tw, srcSprite->_th,
-                dstSprite->_pMemTexture.pData, dstRect.x, dstRect.y, dstSprite->_tw, dstSprite->_th
-            );
         }
 
         // ========================================================================
@@ -477,7 +407,6 @@ class Sprite2D
             }
 
             size_t nSizeTextureAtlas = 0;
-            size_t nSizeMeta         = 0;
             bool   bPNG              = 0;
 
             int nLen = (int)strlen( filename );
@@ -538,32 +467,6 @@ class Sprite2D
 
             if ((framesHorz == 0) && (framesVert == 0)) // TODO: DOCUMENT
             {
-// Game_MakePathSkinNewExt( path, filename, ".txt" ); // TODO:
-/*
-                strcpy( path, GAME_PATH_SKIN );
-                strcat( path, filename );
-                strcat( path, ".txt" );
-*/
- 
-                strcpy( path, GAME_PATH_DATA );
-                strcat( path, filename );
-                strcat( path, ".txt" );
-
-                FILE   *pFileMeta = File_OpenGetSize( path, &nSizeMeta );
-                if( pFileMeta && nSizeMeta )
-                {
-                    if(nSizeMeta > 1024 ) nSizeMeta = 1024;
-
-                    MemPoolType_e eMeta = MEM_POOL_1K; 
-                    int           hMeta = MemPoolMgr_GetHandle ( eMeta ); 
-                    uint8_t      *pMeta = MemPoolMgr_LockHandle( eMeta, hMeta );
-
-                    File_Read( pFileMeta, pMeta, nSizeMeta );
-                    parseMeta( pMeta, nSizeMeta );
-
-                    MemPoolMgr_Unlock( eMeta );
-                    File_Close( pFileMeta );
-                }
             }
             else
             if ((framesHorz == 0) && (framesVert > 0)) // TODO: DOCUMENT
